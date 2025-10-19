@@ -7,15 +7,17 @@ const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contactListRoutes = require("./routes/contactListRoutes");
 const imageRoutes = require("./routes/imageRoutes");
+const templateRoutes = require("./routes/templateRoutes");
+const groupRoutes = require("./routes/groupRoutes");
 const { loadAndScheduleActiveEmails } = require("./services/cronJobScheduler");
 const fileUpload = require("express-fileupload");
 const cors = require("cors");
-const dbURL = process.env.DB_URL;
 
 require("dotenv").config();
 
 const app = express();
-const DB_URI = dbURL;
+
+// Middleware
 app.use(express.json());
 app.use(cookieParser(process.env.SECRET));
 app.use(
@@ -32,22 +34,26 @@ app.use(
 app.use("/uploads", express.static("uploads"));
 app.use(fileUpload());
 
+// ✅ MongoDB Connection
 mongoose
-  // .connect(process.env.DB_URI)
-  .connect(DB_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    // Schedule emails only after DB connection
+    loadAndScheduleActiveEmails();
+  })
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-loadAndScheduleActiveEmails();
-
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/home", homeRoutes);
 app.use("/api/emails", emailRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/contact-lists", contactListRoutes);
+app.use("/api/templates", templateRoutes);
+app.use("/api/groups", groupRoutes);
 app.use("/api", imageRoutes);
 
-
-//temporary port changed from 4040 to 4000
+// Server
 const PORT = process.env.PORT || 4040;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

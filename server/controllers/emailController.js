@@ -13,6 +13,31 @@ const {
 exports.SendImmediateEmail = async (req, res) => {
   try {
     const { adminId, to, subject, text } = req.body;
+
+    // Log incoming request for debugging
+    console.log("SendImmediateEmail called with:", {
+      adminId,
+      recipientCount: to?.length,
+      subject,
+      hasText: !!text,
+    });
+
+    // Validate required fields
+    if (!adminId) {
+      return res.status(400).json({ error: "adminId is required" });
+    }
+    if (!to || to.length === 0) {
+      return res.status(400).json({ error: "Recipients (to) are required" });
+    }
+    if (!subject) {
+      return res.status(400).json({ error: "Subject is required" });
+    }
+    if (!text) {
+      return res
+        .status(400)
+        .json({ error: "Email content (text) is required" });
+    }
+
     const files = req.files || [];
 
     // Process and save attachments (non-inline files)
@@ -36,6 +61,8 @@ exports.SendImmediateEmail = async (req, res) => {
     const recipientList = Array.isArray(to) ? to.flat() : [to];
     const attachmentList = attachments || [];
 
+    console.log("Sending email to:", recipientList);
+
     // Send email using the updated HTML content (with file paths)
     const result = await sendImmediateEmail(
       adminId,
@@ -47,7 +74,8 @@ exports.SendImmediateEmail = async (req, res) => {
 
     return res.status(200).json({ message: "Email sent immediately!", result });
   } catch (error) {
-    console.log(error);
+    console.error("❌ SendImmediateEmail Error:", error);
+    console.error("Error stack:", error.stack);
     return res.status(500).json({ error: error.message });
   }
 };

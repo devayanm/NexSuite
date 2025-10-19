@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 const RecipientsSelector = ({ recipients, setRecipients }) => {
   const [userOptions, setUserOptions] = useState([]);
   const user = useSelector((state) => state.user.user);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -25,56 +25,27 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
         const userOptions = usersData.map((user) => ({
           value: user.email,
           label: `${user.name} (${user.email})`,
-        }));
-
-        // Fetch challenges
-        const challengesResponse = await fetch(`${apiUrl}/challenges`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        const challengesData = await challengesResponse.json();
-        const challengeOptions = challengesData.map((challenge) => ({
-          value: `challenge-${challenge._id}`,
-          label: `Challenge: ${challenge.challengeTitle}`,
-          type: "challenge", // Add type for identification
-        }));
-
-        // Fetch quizzes
-        const quizzesResponse = await fetch(`${apiUrl}/quiz`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        const quizzesData = await quizzesResponse.json();
-        const quizOptions = quizzesData.map((quiz) => ({
-          value: `quiz-${quiz._id}`,
-          label: `Quiz: ${quiz.title}`,
-          type: "quiz", // Add type for identification
+          type: "user",
         }));
 
         //fetch lists
-        const listsResponse = await fetch(`${apiUrl}/contact-lists/all?adminId=${user}`, {
+        const listsResponse = await fetch(
+          `${apiUrl}/contact-lists/all?adminId=${user}`,
+          {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
             },
             credentials: "include",
-          });
+          }
+        );
 
         const listsData = await listsResponse.json();
-        const listOptions = listsData.map((list)=>({
+        const listOptions = listsData.map((list) => ({
           value: `list-${list._id}`,
           label: `List: ${list.listName}`,
           type: "list",
         }));
-        console.log(listOptions);
         // Combine all options and add "Select All" option
         const combinedOptions = [
           {
@@ -83,9 +54,7 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
             isSelectAll: true,
           },
           ...userOptions,
-          ...challengeOptions,
-          ...quizOptions,
-          ...listOptions
+          ...listOptions,
         ];
 
         setUserOptions(combinedOptions);
@@ -101,112 +70,61 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
     const isSelectAll = selectedOptions?.some(
       (option) => option.value === "select-all"
     );
-    const recipientEmails = new Set(
-      recipients.map((recipient) => recipient.value)
-    ); // Track existing recipient emails
 
-    let updatedRecipients = [];
+    // Use a map to avoid duplicates and preserve labels
+    const emailMap = new Map(); // key: email, value: label
+
+    const addEmail = (email, label) => {
+      if (!email || email === "select-all") return;
+      if (!emailMap.has(email)) emailMap.set(email, label || email);
+    };
 
     if (isSelectAll) {
-      // If "Select All" is chosen, add all options except "Select All"
-      updatedRecipients = [
-        ...userOptions.filter((option) => option.value !== "select-all"),
-      ];
-    } else {
-      updatedRecipients = [...selectedOptions]; // Start with currently selected options
-
-      for (let option of selectedOptions) {
-        if (option.type === "challenge") {
-          // Fetch users in the selected challenge
+      // Add all user emails only
+      userOptions
+        .filter((opt) => opt.type === "user")
+        .forEach((opt) => addEmail(opt.value, opt.label));
+    } else if (selectedOptions && selectedOptions.length) {
+      // Process each selection
+      for (const option of selectedOptions) {
+        if (option.type === "list") {
+          // Fetch users in the selected list
           try {
+            const listId = option.value.split("-")[1];
             const response = await fetch(
-              `${import.meta.env.VITE_API_URL}/challenges/${
-                option.value.split("-")[1]
-              }/users`
+              `${
+                import.meta.env.VITE_API_URL
+              }/contact-lists/view?listId=${listId}&adminId=${user}`,
+              {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+              }
             );
             const data = await response.json();
-            const challengeUsers = data.map((user) => ({
-              value: user.email,
-              label: `${user.name} (${user.email})`,
+            const listUsers = (data.contacts || []).map((u) => ({
+              value: u.email,
+              label: `${u.name} (${u.email})`,
             }));
-            // Add users from challenge without duplication
-            challengeUsers.forEach((user) => {
-              if (!recipientEmails.has(user.value)) {
-                updatedRecipients.push(user);
-                recipientEmails.add(user.value);
-              }
-            });
+            listUsers.forEach((u) => addEmail(u.value, u.label));
           } catch (error) {
             console.error(
-              `Failed to fetch users for challenge: ${option.label}`,
+              `Failed to fetch users for list: ${option.label}`,
               error
             );
           }
-        } else if (option.type === "quiz") {
-          // Fetch users in the selected quiz
-          try {
-            const response = await fetch(
-              `${import.meta.env.VITE_API_URL}/quiz/${
-                option.value.split("-")[1]
-              }/users`
-            );
-            const data = await response.json();
-            const quizUsers = data.map((user) => ({
-              value: user.email,
-              label: `${user.name} (${user.email})`,
-            }));
-            // Add users from quiz without duplication
-            quizUsers.forEach((user) => {
-              if (!recipientEmails.has(user.value)) {
-                updatedRecipients.push(user);
-                recipientEmails.add(user.value);
-              }
-            });
-          } catch (error) {
-            console.error(
-              `Failed to fetch users for quiz: ${option.label}`,
-              error
-            );
-          }
-        } else if (option.type === "list") {
-        // Fetch users in the selected list
-        try {
-          const listEmails = `${import.meta.env.VITE_API_URL}/contact-lists/view?listId=${
-              option.value.split("-")[1]
-            }&adminId=${user}`;
-          console.log(listEmails);
-          const response = await fetch(
-            listEmails ,{
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              credentials: "include",
-          });
-          const data = await response.json();
-          console.log(data);
-          const listsUsers = data.contacts.map((user) => ({
-            value: user.email,
-            label: `${user.name} (${user.email})`,
-          }));
-          // Add users from list without duplication
-          listsUsers.forEach((user) => {
-            if (!recipientEmails.has(user.value)) {
-              updatedRecipients.push(user);
-              recipientEmails.add(user.value);
-            }
-          });
-        } catch (error) {
-          console.error(
-            `Failed to fetch users for quiz: ${option.label}`,
-            error
-          );
+        } else {
+          // Treat as a direct email selection (user or custom entry)
+          addEmail(option.value, option.label);
         }
-      }
       }
     }
 
-    setRecipients(updatedRecipients || []);
+    const updatedRecipients = Array.from(emailMap.entries()).map(
+      ([value, label]) => ({ value, label })
+    );
+
+    setRecipients(updatedRecipients);
   };
 
   const handleCreateOption = (inputValue) => {
@@ -231,7 +149,7 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
         placeholder="Select or type emails"
         isClearable
         isSearchable
-        noOptionsMessage={() => "No users, quizzes, or challenges found"}
+        noOptionsMessage={() => "No users or lists found"}
         className="basic-single text-xs inline mt-10"
         classNamePrefix="select"
       />

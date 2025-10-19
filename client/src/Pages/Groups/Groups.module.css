@@ -1,0 +1,267 @@
+.container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  color: #4f46e5;
+  font-weight: 500;
+}
+
+.back:hover {
+  color: #4338ca;
+}
+
+.back button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.interhead {
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #4f46e5;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.addButton:hover {
+  background: #4338ca;
+}
+
+.addButton button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Table Styles */
+.maintable {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.headtable {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 15px 20px;
+  font-weight: 600;
+}
+
+.headtable h3 {
+  color: #374151;
+  font-size: 14px;
+}
+
+.tablebody {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.tablerow {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1fr 1.5fr 1fr;
+  padding: 15px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.tablerow:hover {
+  background: #f9fafb;
+}
+
+.text {
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.actionBtn {
+  display: flex;
+  gap: 15px;
+  cursor: pointer;
+}
+
+.actionBtn .text {
+  color: #4f46e5;
+  transition: color 0.2s;
+}
+
+.actionBtn .text:hover {
+  color: #4338ca;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modalContent {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalContent h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 20px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.formGroup input[type="text"],
+.formGroup textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.formGroup input[type="text"]:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.membersList {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.memberItem:last-child {
+  border-bottom: none;
+}
+
+.memberItem input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.memberItem label {
+  flex: 1;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  margin: 0;
+}
+
+.modalActions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.saveBtn,
+.cancelBtn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveBtn {
+  background: #4f46e5;
+  color: white;
+}
+
+.saveBtn:hover {
+  background: #4338ca;
+}
+
+.cancelBtn {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.cancelBtn:hover {
+  background: #d1d5db;
+}
+
+@media (max-width: 768px) {
+  .headtable,
+  .tablerow {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+}

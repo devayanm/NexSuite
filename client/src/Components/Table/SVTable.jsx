@@ -110,7 +110,8 @@ const SVTable = () => {
     const fetchEmails = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
-        const response = await fetch(`${apiUrl}/emails/admin/${user}`, {
+        // Fetch ALL emails from DB instead of admin-specific emails
+        const response = await fetch(`${apiUrl}/emails/`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

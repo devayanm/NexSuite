@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Toaster } from "sonner";
 
 // Pages
 import Login from "./Pages/Login";
@@ -8,6 +9,8 @@ import SendEmail from "./Pages/SendEmail/SendEmail";
 import ViewEmails from "./Pages/ViewEmail/ViewEmails";
 import EmailDetails from "./Pages/EmailDetails";
 import Contacts from "./Pages/Contact/Contacts";
+import Templates from "./Pages/Templates/Templates";
+import Groups from "./Pages/Groups/Groups";
 
 // Components
 import ProtectedRoute from "./Components/ProtectedRoute";
@@ -18,6 +21,7 @@ import Layout from "./Pages/Layout/Layout";
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -40,6 +44,11 @@ function App() {
             path="contact"
             element={<ProtectedRoute element={Contacts} />}
           />
+          <Route
+            path="templates"
+            element={<ProtectedRoute element={Templates} />}
+          />
+          <Route path="groups" element={<ProtectedRoute element={Groups} />} />
         </Route>
       </Routes>
     </BrowserRouter>
