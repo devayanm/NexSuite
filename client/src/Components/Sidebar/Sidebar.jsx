@@ -25,8 +25,10 @@ function Sidebar() {
     { path: "/", icon: Home, label: "Home" },
     { path: "/view-emails", icon: Explore, label: "View Emails" },
     { path: "/send-email", icon: Contest, label: "Send Emails" },
+    { path: "/templates", icon: Contest, label: "Templates" },
     { path: "/contact", icon: LeaderBoard, label: "Contact" },
-    { path: "/lists", icon: Community, label: "List" },
+    { path: "/lists", icon: Community, label: "Lists" },
+    { path: "/groups", icon: Community, label: "Groups" },
   ];
 
   const isActive = (path) => {

@@ -203,7 +203,10 @@ function Header() {
             className={styles.navbarlogo}
             src={navbarlogo}
             alt="NexFellow logo"
-            onError={(e) => (e.target.src = "https://via.placeholder.com/150")}
+            onError={(e) =>
+              (e.target.src =
+                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%239ca3af'%3ELogo%3C/text%3E%3C/svg%3E")
+            }
           />
         </Link>
       </div>
@@ -228,7 +231,7 @@ function Header() {
               )}
             </div>
           ) : null}
-          {isModalOpen && <NotificationModal closeModal={toggleModal} />}
+          {/* NotificationModal not implemented; remove to avoid runtime errors */}
 
           {loading ? (
             <p>Loading...</p>
@@ -243,10 +246,14 @@ function Header() {
               >
                 <img
                   className={styles.dp}
-                  src={user.profilePhoto || "https://via.placeholder.com/50"}
+                  src={
+                    user.profilePhoto ||
+                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%239ca3af'%3EUser%3C/text%3E%3C/svg%3E"
+                  }
                   alt={user.username || "User"}
                   onError={(e) =>
-                    (e.target.src = "https://via.placeholder.com/50")
+                    (e.target.src =
+                      "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect width='100%25' height='100%25' fill='%23e5e7eb'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='10' fill='%239ca3af'%3EUser%3C/text%3E%3C/svg%3E")
                   }
                 />
               </div>
