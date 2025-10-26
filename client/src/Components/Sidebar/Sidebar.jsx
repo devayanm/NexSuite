@@ -27,7 +27,6 @@ function Sidebar() {
     { path: "/send-email", icon: Contest, label: "Send Emails" },
     { path: "/templates", icon: Contest, label: "Templates" },
     { path: "/contact", icon: LeaderBoard, label: "Contact" },
-    { path: "/lists", icon: Community, label: "Lists" },
     { path: "/groups", icon: Community, label: "Groups" },
   ];
 

@@ -31,6 +31,7 @@ const SendEmail = () => {
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [groups, setGroups] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [isSending, setIsSending] = useState(false);
   const { user } = useSelector((state) => state.user);
   const adminId = user;
 
@@ -166,6 +167,25 @@ const SendEmail = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (!recipients || recipients.length === 0) {
+      toast.error("Please select at least one recipient");
+      return;
+    }
+
+    if (!subject.trim()) {
+      toast.error("Please enter an email subject");
+      return;
+    }
+
+    if (!emailContent.trim() || emailContent === "<p><br></p>") {
+      toast.error("Please enter email content");
+      return;
+    }
+
+    setIsSending(true);
+
     try {
       const selectedDate = date || new Date().toISOString().split("T")[0];
       const selectedTime =
@@ -208,19 +228,27 @@ const SendEmail = () => {
         body: JSON.stringify(emailData),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        toast.success("Email submitted successfully");
+        toast.success(
+          isScheduled
+            ? "Email scheduled successfully!"
+            : "Email sent successfully!"
+        );
         // Reset form
         setRecipients([]);
         setSubject("");
         setEmailContent("");
         setSelectedTemplate("");
       } else {
-        toast.error("Failed to send email");
+        toast.error(data.error || "Failed to send email. Please try again.");
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      toast.error("An error occurred");
+      toast.error("Network error. Please check your connection and try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -403,12 +431,52 @@ const SendEmail = () => {
           />
 
           <div className={styles.spaceX4}>
-            <button type="submit" className={styles.button}>
-              Send Email{" "}
-              <FontAwesomeIcon
-                icon={faPaperPlane}
-                style={{ color: "#ffffff" }}
-              />
+            <button
+              type="submit"
+              className={styles.button}
+              disabled={isSending || recipients.length === 0}
+              style={{
+                opacity: isSending || recipients.length === 0 ? 0.6 : 1,
+                cursor:
+                  isSending || recipients.length === 0
+                    ? "not-allowed"
+                    : "pointer",
+              }}
+            >
+              {isSending ? (
+                <>
+                  <span>Sending...</span>
+                  <svg
+                    className="animate-spin h-5 w-5 ml-2"
+                    style={{ display: "inline-block", marginLeft: "8px" }}
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                </>
+              ) : (
+                <>
+                  Send Email{" "}
+                  <FontAwesomeIcon
+                    icon={faPaperPlane}
+                    style={{ color: "#ffffff" }}
+                  />
+                </>
+              )}
             </button>
           </div>
         </form>

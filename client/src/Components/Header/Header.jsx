@@ -173,7 +173,7 @@ function Header() {
         if (!userId) {
           throw new Error("User ID is missing");
         }
-        console.log("userId", user);
+        if (import.meta.env.DEV) console.log("userId", user);
       } catch (err) {
         setError("Failed to load user data: " + err.message);
       } finally {
@@ -185,7 +185,7 @@ function Header() {
     fetchUserData();
   }, [location.pathname, dispatch]);
 
-  console.log("PATH", Path);
+  if (import.meta.env.DEV) console.log("PATH", Path);
 
   const handleRedirect = () => {
     if (user) {
