@@ -12,11 +12,11 @@ const Table = () => {
 
   //   const data = lists;
   useEffect(() => {
-    const fetchEmails = async () => {
+    const fetchGroups = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const response = await fetch(
-          `${apiUrl}/contact-lists/all?adminId=${user}`,
+          `${apiUrl}/api/groups/all?adminId=${user}`,
           {
             method: "GET",
             headers: {
@@ -31,11 +31,11 @@ const Table = () => {
         const data = await response.json();
         setLists(data);
       } catch (error) {
-        console.error("Error fetching lists:", error);
+        console.error("Error fetching groups:", error);
       }
     };
 
-    fetchEmails();
+    fetchGroups();
   }, [user]);
 
   // return (

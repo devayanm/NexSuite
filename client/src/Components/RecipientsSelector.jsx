@@ -13,7 +13,7 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
         const apiUrl = import.meta.env.VITE_API_URL;
 
         // Fetch users
-        const usersResponse = await fetch(`${apiUrl}/users/`, {
+        const usersResponse = await fetch(`${apiUrl}/api/users/`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -25,27 +25,78 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
         const userOptions = usersData.map((user) => ({
           value: user.email,
           label: `${user.name} (${user.email})`,
-          type: "user",
         }));
 
-        //fetch lists
-        const listsResponse = await fetch(
-          `${apiUrl}/contact-lists/all?adminId=${user}`,
-          {
+        // Fetch challenges (with error handling)
+        let challengeOptions = [];
+        try {
+          const challengesResponse = await fetch(`${apiUrl}/api/challenges`, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
             },
             credentials: "include",
+          });
+          if (challengesResponse.ok) {
+            const challengesData = await challengesResponse.json();
+            challengeOptions = challengesData.map((challenge) => ({
+              value: `challenge-${challenge._id}`,
+              label: `Challenge: ${challenge.challengeTitle}`,
+              type: "challenge",
+            }));
           }
-        );
+        } catch (error) {
+          console.log("Challenges endpoint not available");
+        }
 
-        const listsData = await listsResponse.json();
-        const listOptions = listsData.map((list) => ({
-          value: `list-${list._id}`,
-          label: `List: ${list.listName}`,
-          type: "list",
-        }));
+        // Fetch quizzes (with error handling)
+        let quizOptions = [];
+        try {
+          const quizzesResponse = await fetch(`${apiUrl}/api/quiz`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          });
+          if (quizzesResponse.ok) {
+            const quizzesData = await quizzesResponse.json();
+            quizOptions = quizzesData.map((quiz) => ({
+              value: `quiz-${quiz._id}`,
+              label: `Quiz: ${quiz.title}`,
+              type: "quiz",
+            }));
+          }
+        } catch (error) {
+          console.log("Quiz endpoint not available");
+        }
+
+        //fetch groups
+        let groupOptions = [];
+        try {
+          const groupsResponse = await fetch(
+            `${apiUrl}/api/groups/all?adminId=${user}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+          if (groupsResponse.ok) {
+            const groupsData = await groupsResponse.json();
+            groupOptions = Array.isArray(groupsData)
+              ? groupsData.map((group) => ({
+                  value: `group-${group._id}`,
+                  label: `Group: ${group.name}`,
+                  type: "group",
+                }))
+              : [];
+          }
+        } catch (error) {
+          console.log("Groups endpoint not available");
+        }
         // Combine all options and add "Select All" option
         const combinedOptions = [
           {
@@ -54,7 +105,9 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
             isSelectAll: true,
           },
           ...userOptions,
-          ...listOptions,
+          ...challengeOptions,
+          ...quizOptions,
+          ...groupOptions,
         ];
 
         setUserOptions(combinedOptions);
@@ -70,61 +123,113 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
     const isSelectAll = selectedOptions?.some(
       (option) => option.value === "select-all"
     );
+    const recipientEmails = new Set(
+      recipients.map((recipient) => recipient.value)
+    ); // Track existing recipient emails
 
-    // Use a map to avoid duplicates and preserve labels
-    const emailMap = new Map(); // key: email, value: label
-
-    const addEmail = (email, label) => {
-      if (!email || email === "select-all") return;
-      if (!emailMap.has(email)) emailMap.set(email, label || email);
-    };
+    let updatedRecipients = [];
 
     if (isSelectAll) {
-      // Add all user emails only
-      userOptions
-        .filter((opt) => opt.type === "user")
-        .forEach((opt) => addEmail(opt.value, opt.label));
-    } else if (selectedOptions && selectedOptions.length) {
-      // Process each selection
-      for (const option of selectedOptions) {
-        if (option.type === "list") {
-          // Fetch users in the selected list
+      // If "Select All" is chosen, add all options except "Select All"
+      updatedRecipients = [
+        ...userOptions.filter((option) => option.value !== "select-all"),
+      ];
+    } else {
+      updatedRecipients = [...selectedOptions]; // Start with currently selected options
+
+      for (let option of selectedOptions) {
+        if (option.type === "challenge") {
+          // Fetch users in the selected challenge
           try {
-            const listId = option.value.split("-")[1];
             const response = await fetch(
-              `${
-                import.meta.env.VITE_API_URL
-              }/contact-lists/view?listId=${listId}&adminId=${user}`,
-              {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-              }
+              `${import.meta.env.VITE_API_URL}/challenges/${
+                option.value.split("-")[1]
+              }/users`
             );
             const data = await response.json();
-            const listUsers = (data.contacts || []).map((u) => ({
-              value: u.email,
-              label: `${u.name} (${u.email})`,
+            const challengeUsers = data.map((user) => ({
+              value: user.email,
+              label: `${user.name} (${user.email})`,
             }));
-            listUsers.forEach((u) => addEmail(u.value, u.label));
+            // Add users from challenge without duplication
+            challengeUsers.forEach((user) => {
+              if (!recipientEmails.has(user.value)) {
+                updatedRecipients.push(user);
+                recipientEmails.add(user.value);
+              }
+            });
           } catch (error) {
             console.error(
-              `Failed to fetch users for list: ${option.label}`,
+              `Failed to fetch users for challenge: ${option.label}`,
               error
             );
           }
-        } else {
-          // Treat as a direct email selection (user or custom entry)
-          addEmail(option.value, option.label);
+        } else if (option.type === "quiz") {
+          // Fetch users in the selected quiz
+          try {
+            const response = await fetch(
+              `${import.meta.env.VITE_API_URL}/quiz/${
+                option.value.split("-")[1]
+              }/users`
+            );
+            const data = await response.json();
+            const quizUsers = data.map((user) => ({
+              value: user.email,
+              label: `${user.name} (${user.email})`,
+            }));
+            // Add users from quiz without duplication
+            quizUsers.forEach((user) => {
+              if (!recipientEmails.has(user.value)) {
+                updatedRecipients.push(user);
+                recipientEmails.add(user.value);
+              }
+            });
+          } catch (error) {
+            console.error(
+              `Failed to fetch users for quiz: ${option.label}`,
+              error
+            );
+          }
+        } else if (option.type === "list") {
+          // Fetch users in the selected list
+          try {
+            const listEmails = `${
+              import.meta.env.VITE_API_URL
+            }/contact-lists/view?listId=${
+              option.value.split("-")[1]
+            }&adminId=${user}`;
+            console.log(listEmails);
+            const response = await fetch(listEmails, {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            });
+            const data = await response.json();
+            console.log(data);
+            const listsUsers = data.contacts.map((user) => ({
+              value: user.email,
+              label: `${user.name} (${user.email})`,
+            }));
+            // Add users from list without duplication
+            listsUsers.forEach((user) => {
+              if (!recipientEmails.has(user.value)) {
+                updatedRecipients.push(user);
+                recipientEmails.add(user.value);
+              }
+            });
+          } catch (error) {
+            console.error(
+              `Failed to fetch users for quiz: ${option.label}`,
+              error
+            );
+          }
         }
       }
     }
 
-    const updatedRecipients = Array.from(emailMap.entries()).map(
-      ([value, label]) => ({ value, label })
-    );
-
-    setRecipients(updatedRecipients);
+    setRecipients(updatedRecipients || []);
   };
 
   const handleCreateOption = (inputValue) => {
@@ -149,7 +254,7 @@ const RecipientsSelector = ({ recipients, setRecipients }) => {
         placeholder="Select or type emails"
         isClearable
         isSearchable
-        noOptionsMessage={() => "No users or lists found"}
+        noOptionsMessage={() => "No users, quizzes, or challenges found"}
         className="basic-single text-xs inline mt-10"
         classNamePrefix="select"
       />

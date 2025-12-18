@@ -1,11 +1,11 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster } from "sonner";
 
 // Pages
 import Login from "./Pages/Login";
-import Home from "./Pages/Home/Home";
+import Home from "./Pages/Home/HomeEnhanced";
+import Lists from "./Pages/Lists/Lists";
 import SendEmail from "./Pages/SendEmail/SendEmail";
-import ViewEmails from "./Pages/ViewEmail/ViewEmails";
+import ViewEmails from "./Pages/ViewEmail/ViewEmailsEnhanced";
 import EmailDetails from "./Pages/EmailDetails";
 import Contacts from "./Pages/Contact/Contacts";
 import Templates from "./Pages/Templates/Templates";
@@ -20,18 +20,12 @@ import Layout from "./Pages/Layout/Layout";
 function App() {
   return (
     <BrowserRouter>
-      <Toaster
-        position="top-right"
-        richColors
-        expand={false}
-        duration={4000}
-        closeButton
-      />
       <Routes>
         <Route path="/login" element={<Login />} />
 
         <Route path="/" element={<Layout />}>
           <Route index element={<ProtectedRoute element={Home} />} />
+          <Route path="lists" element={<ProtectedRoute element={Lists} />} />
           <Route
             path="email/:id"
             element={<ProtectedRoute element={EmailDetails} />}
@@ -54,6 +48,7 @@ function App() {
           />
           <Route path="groups" element={<ProtectedRoute element={Groups} />} />
         </Route>
+        <Route path="*" element={<div>404 Not Found</div>} /> 
       </Routes>
     </BrowserRouter>
   );

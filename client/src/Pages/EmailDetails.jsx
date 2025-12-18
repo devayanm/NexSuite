@@ -12,7 +12,7 @@ const EmailDetails = () => {
     const fetchEmailDetails = async () => {
       const apiUrl = import.meta.env.VITE_API_URL;
       try {
-        const response = await fetch(`${apiUrl}/emails/email/${id}`, {
+        const response = await fetch(`${apiUrl}/api/emails/email/${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -42,7 +42,7 @@ const EmailDetails = () => {
   const handleMarkInactive = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     try {
-      const response = await fetch(`${apiUrl}/emails/email/${id}`, {
+      const response = await fetch(`${apiUrl}/api/emails/email/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +76,7 @@ const EmailDetails = () => {
   const handleDelete = async () => {
     const apiUrl = import.meta.env.VITE_API_URL;
     try {
-      const response = await fetch(`${apiUrl}/emails/delete/${id}`, {
+      const response = await fetch(`${apiUrl}/api/emails/delete/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
