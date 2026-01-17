@@ -184,3 +184,43 @@ exports.markEmailAsInactive = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Test email endpoint to verify SMTP configuration
+exports.testEmail = async (req, res) => {
+  try {
+    const { sendEmail } = require("../utils/emailUtils");
+    const testEmail = req.body.email || "test@example.com";
+
+    await sendEmail({
+      to: testEmail,
+      subject: "Test Email from NexSuite",
+      text: "<h1>Test Email</h1><p>This is a test email to verify your SMTP configuration is working correctly.</p><p>If you receive this, your email service is configured properly!</p>",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Test email sent successfully!",
+      sentTo: testEmail,
+      config: {
+        host: "smtp.hostinger.com",
+        port: 587,
+        secure: false,
+        from: process.env.EMAIL,
+      },
+    });
+  } catch (error) {
+    console.error("Test email failed:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.toString(),
+      config: {
+        host: "smtp.hostinger.com",
+        port: 587,
+        secure: false,
+        from: process.env.EMAIL,
+        passwordSet: !!process.env.PASSWORD,
+      },
+    });
+  }
+};

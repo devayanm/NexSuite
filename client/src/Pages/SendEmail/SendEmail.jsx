@@ -1,20 +1,32 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import SchedulingOptions from "../../Components/SchedulingOptions";
 import RecipientsSelector from "../../Components/RecipientsSelector";
 import { generateCronExpression } from "../../utils/cronUtils";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import FroalaEditor from "react-froala-wysiwyg";
+import "froala-editor/css/froala_editor.pkgd.min.css";
+import "froala-editor/js/plugins.pkgd.min";
+import "froala-editor/js/plugins/align.min.js";
+import "froala-editor/js/plugins/colors.min.js";
+import "froala-editor/js/plugins/draggable.min.js";
+import "froala-editor/js/plugins/entities.min.js";
+import "froala-editor/js/plugins/font_size.min.js";
+import "froala-editor/js/plugins/help.min.js";
+import "froala-editor/js/plugins/image.min.js";
+import "froala-editor/js/plugins/link.min.js";
+import "froala-editor/js/plugins/lists.min.js";
+import "froala-editor/js/plugins/paragraph_format.min.js";
+import "froala-editor/js/plugins/paragraph_style.min.js";
+import "froala-editor/js/plugins/save.min.js";
+import "froala-editor/js/plugins/table.min.js";
+import "froala-editor/js/plugins/word_paste.min.js";
 import styles from "./SendEmail.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-
 const SendEmail = () => {
-  const quillRef = useRef(null);
   const [recipients, setRecipients] = useState([]);
   const [subject, setSubject] = useState("");
   const [date, setDate] = useState("");
@@ -28,10 +40,9 @@ const SendEmail = () => {
   const [customDayOfMonth, setCustomDayOfMonth] = useState(1);
   const [emailContent, setEmailContent] = useState("");
   const [templates, setTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState("");
   const [groups, setGroups] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
-  const [isSending, setIsSending] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState("");
   const { user } = useSelector((state) => state.user);
   const adminId = user;
 
@@ -54,20 +65,19 @@ const SendEmail = () => {
       setSubject(state.subject || "");
     }
 
-    // Fetch templates, groups, and users
+    // Fetch templates and groups
     fetchTemplates();
     fetchGroups();
-    fetchAllUsers();
-  }, [state, user]);
+  }, [state]);
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch(`${apiUrl}/templates/all?adminId=${user}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
+      const response = await fetch(
+        `${apiUrl}/api/templates/all?adminId=${user}`,
+        {
+          credentials: "include",
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setTemplates(data);
@@ -79,12 +89,9 @@ const SendEmail = () => {
 
   const fetchGroups = async () => {
     try {
-      const response = await fetch(`${apiUrl}/groups/all?adminId=${user}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch(`${apiUrl}/api/groups/all?adminId=${user}`, {
         credentials: "include",
       });
-
       if (response.ok) {
         const data = await response.json();
         setGroups(data);
@@ -94,98 +101,245 @@ const SendEmail = () => {
     }
   };
 
-  const fetchAllUsers = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/users/`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAllUsers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  const handleTemplateSelect = (e) => {
+  const handleTemplateSelect = async (e) => {
     const templateId = e.target.value;
     setSelectedTemplate(templateId);
+    if (!templateId) {
+      return;
+    }
 
-    if (templateId) {
-      const template = templates.find((t) => t._id === templateId);
-      if (template) {
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/templates/${templateId}?adminId=${user}`,
+        {
+          credentials: "include",
+        }
+      );
+      if (response.ok) {
+        const template = await response.json();
         setSubject(template.subject);
         setEmailContent(template.body);
-        toast.success("Template loaded successfully");
       }
-    } else {
-      // Clear if no template selected
-      setSubject("");
-      setEmailContent("");
+    } catch (error) {
+      console.error("Error fetching template:", error);
     }
   };
 
-  const handleSendToGroup = (groupId) => {
-    const group = groups.find((g) => g._id === groupId);
-    if (group) {
-      const groupEmails = group.members.map((member) => ({
-        value: member.email,
-        label: `${member.name} (${member.email})`,
-      }));
-      setRecipients(groupEmails);
-      toast.success(
-        `Selected ${group.members.length} recipients from ${group.groupName}`
+  const handleGroupSelect = async (e) => {
+    const groupId = e.target.value;
+    setSelectedGroup(groupId);
+    if (!groupId) return;
+
+    try {
+      const response = await fetch(
+        `${apiUrl}/api/groups/${groupId}/emails?adminId=${user}`,
+        {
+          credentials: "include",
+        }
       );
+      if (response.ok) {
+        const data = await response.json();
+        // Add group emails to recipients
+        const newRecipients = data.emails.map((email) => ({
+          value: email,
+          label: email,
+        }));
+        setRecipients((prev) => {
+          const existingEmails = new Set(prev.map((r) => r.value));
+          const uniqueNew = newRecipients.filter(
+            (r) => !existingEmails.has(r.value)
+          );
+          return [...prev, ...uniqueNew];
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching group emails:", error);
     }
   };
 
-  const handleSendToAll = () => {
-    const allEmails = allUsers.map((user) => ({
-      value: user.email,
-      label: `${user.name} (${user.email})`,
-    }));
-    setRecipients(allEmails);
-    toast.success(`Selected all ${allUsers.length} users`);
+  const handleModelChange = (content) => {
+    setEmailContent(content);
   };
 
-  // ReactQuill modules configuration
-  const quillModules = {
-    toolbar: [
-      [{ header: [1, 2, 3, false] }],
-      ["bold", "italic", "underline", "strike"],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ color: [] }, { background: [] }],
-      [{ align: [] }],
-      ["link", "image"],
-      ["clean"],
+  const froalaEditorConfig = {
+    attribution: false,
+    height: 300,
+    quickInsertEnabled: false,
+    imageDefaultWidth: 0,
+    imageResizeWithPercent: true,
+    imageMultipleStyles: false,
+    imageOutputSize: true,
+    imageRoundPercent: true,
+    imageMaxSize: 1024 * 1024 * 2.5,
+    imageMove: true,
+    imageDefaultDisplay: "inline",
+    imageSplitHtml: true,
+    imageEditButtons: [
+      "imageReplace",
+      "imageAlign",
+      "imageRemove",
+      "imageSize",
+      "imageCaption",
+      "-",
+      "imageLink",
+      "linkOpen",
+      "linkEdit",
+      "linkRemove",
     ],
+    imageAllowedTypes: ["jpeg", "jpg", "png", "gif"],
+    imageInsertButtons: ["imageBack", "|", "imageUpload"],
+    placeholderText: "Your content goes here!",
+    colorsStep: 5,
+    colorsText: [
+      "#000000",
+      "#2C2E2F",
+      "#6C7378",
+      "#FFFFFF",
+      "#009CDE",
+      "#003087",
+      "#FF9600",
+      "#00CF92",
+      "#DE0063",
+      "#640487",
+      "REMOVE",
+    ],
+    colorsBackground: [
+      "#000000",
+      "#2C2E2F",
+      "#6C7378",
+      "#FFFFFF",
+      "#009CDE",
+      "#003087",
+      "#FF9600",
+      "#00CF92",
+      "#DE0063",
+      "#640487",
+      "REMOVE",
+    ],
+    toolbarButtons: {
+      moreText: {
+        buttons: [
+          "paragraphFormat",
+          "|",
+          "fontSize",
+          "textColor",
+          "backgroundColor",
+          "insertImage",
+          "alignLeft",
+          "alignRight",
+          "alignJustify",
+          "formatOL",
+          "formatUL",
+          "indent",
+          "outdent",
+        ],
+        buttonsVisible: 6,
+      },
+      moreRich: {
+        buttons: [
+          "|",
+          "bold",
+          "italic",
+          "underline",
+          "insertHR",
+          "insertLink",
+          "insertTable",
+        ],
+        name: "additionals",
+        buttonsVisible: 3,
+      },
+      dragnline: true,
+      dummySection: {
+        buttons: ["|"],
+      },
+      moreMisc: {
+        buttons: ["|", "undo", "redo", "help", "|"],
+        align: "right",
+        buttonsVisible: 2,
+      },
+    },
+    tableEditButtons: [
+      "tableHeader",
+      "tableRemove",
+      "tableRows",
+      "tableColumns",
+      "tableStyle",
+      "-",
+      "tableCells",
+      "tableCellBackground",
+      "tableCellVerticalAlign",
+      "tableCellHorizontalAlign",
+    ],
+    tableStyles: {
+      grayTableBorder: "Gray Table Border",
+      blackTableBorder: "Black Table Border",
+      noTableBorder: "No Table Border",
+    },
+    toolbarSticky: true,
+    pluginsEnabled: [
+      "align",
+      "colors",
+      "draggable",
+      "entities",
+      "fontSize",
+      "help",
+      "image",
+      "link",
+      "lists",
+      "paragraphFormat",
+      "paragraphStyle",
+      "save",
+      "table",
+      "wordPaste",
+    ],
+    events: {
+      "image.beforeUpload": function (files) {
+        const editor = this;
+        if (files.length) {
+          // Create a FormData object to handle file upload
+          const formData = new FormData();
+          formData.append("file", files[0]);
+
+          // Upload the image to your server
+          fetch(`${apiUrl}/api/upload-image`, {
+            method: "POST",
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              // Assuming the response contains the URL of the uploaded image
+              const imageUrl = data.url; // e.g., "https://your-server.com/images/image1.jpg"
+
+              console.log(imageUrl);
+              // Insert the image with the absolute URL into the editor
+              editor.image.insert(imageUrl, null, null, editor.image.get());
+            })
+            .catch((error) => {
+              console.log(error);
+              console.error("Image upload failed:", error);
+            });
+
+          // Prevent the default Froala upload
+          return false;
+        }
+      },
+      initialized: function () {
+        const editor = this;
+        editor.events.on("mousedown", function (e) {
+          if (e.target.tagName === "IMG") {
+            e.target.setAttribute("draggable", true);
+          }
+        });
+      },
+      contentChanged: function () {
+        const editor = this;
+        setEmailContent(editor.html.get());
+      },
+    },
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Client-side validation
-    if (!recipients || recipients.length === 0) {
-      toast.error("Please select at least one recipient");
-      return;
-    }
-
-    if (!subject.trim()) {
-      toast.error("Please enter an email subject");
-      return;
-    }
-
-    if (!emailContent.trim() || emailContent === "<p><br></p>") {
-      toast.error("Please enter email content");
-      return;
-    }
-
-    setIsSending(true);
-
     try {
       const selectedDate = date || new Date().toISOString().split("T")[0];
       const selectedTime =
@@ -211,7 +365,7 @@ const SendEmail = () => {
         adminId,
         to: recipients.map((recipient) => recipient.value),
         subject,
-        text: emailContent,
+        text: emailContent, // Use the Froala editor content
         schedule: isScheduled ? cronExpression : null,
         status: status,
       };
@@ -228,27 +382,13 @@ const SendEmail = () => {
         body: JSON.stringify(emailData),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        toast.success(
-          isScheduled
-            ? "Email scheduled successfully!"
-            : "Email sent successfully!"
-        );
-        // Reset form
-        setRecipients([]);
-        setSubject("");
-        setEmailContent("");
-        setSelectedTemplate("");
+        alert("Email submitted successfully");
       } else {
-        toast.error(data.error || "Failed to send email. Please try again.");
+        alert("Failed to send email");
       }
     } catch (error) {
       console.error("Error sending email:", error);
-      toast.error("Network error. Please check your connection and try again.");
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -330,60 +470,51 @@ const SendEmail = () => {
   // );
 
   return (
-    <div className={styles.minHScreen}>
-      <div onClick={goback} className={styles.backBttn}>
-        <FontAwesomeIcon icon={faArrowLeft} />
-        <button>Back</button>
-      </div>
 
+    <div className={styles.minHScreen}>
+      <h1 className="text-3xl text-cyan-700 font-bold pb-3">GEEK MAILER</h1>
       <div className={`${styles.container} ${styles.containerMd}`}>
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Template Selector */}
-          <div className={styles.spaceY2}>
-            <label className={styles.label}>Use Template (Optional):</label>
+          {/* Template Selection */}
+          <div>
+            <label className={styles.label}>Select Template (Optional):</label>
             <select
               value={selectedTemplate}
               onChange={handleTemplateSelect}
               className={styles.input}
             >
-              <option value="">-- Select a template --</option>
+              <option value="">No Template</option>
               {templates.map((template) => (
                 <option key={template._id} value={template._id}>
-                  {template.templateName}
+                  {template.title}
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Quick Actions for Groups */}
+          {/* Group Selection */}
           <div className={styles.spaceY2}>
-            <label className={styles.label}>Quick Select Recipients:</label>
-            <div className={styles.quickActions}>
-              <button
-                type="button"
-                onClick={handleSendToAll}
-                className={styles.quickBtn}
-              >
-                All Users ({allUsers.length})
-              </button>
+            <label className={styles.label}>
+              Add Group Recipients (Optional):
+            </label>
+            <select
+              value={selectedGroup}
+              onChange={handleGroupSelect}
+              className={styles.input}
+            >
+              <option value="">No Group</option>
               {groups.map((group) => (
-                <button
-                  key={group._id}
-                  type="button"
-                  onClick={() => handleSendToGroup(group._id)}
-                  className={styles.quickBtn}
-                >
-                  {group.groupName} ({group.members.length})
-                </button>
+                <option key={group._id} value={group._id}>
+                  {group.name}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
           <RecipientsSelector
             recipients={recipients}
             setRecipients={setRecipients}
           />
-
           <div className={styles.spaceY2}>
             <label className={styles.label}>Subject:</label>
             <input
@@ -396,16 +527,13 @@ const SendEmail = () => {
             />
           </div>
 
-          {/* ReactQuill Email Content Editor */}
+          {/* Froala Email Content Editor */}
           <div className={styles.spaceY2}>
             <label className={styles.label}>Email Content:</label>
-            <ReactQuill
-              ref={quillRef}
-              theme="snow"
-              value={emailContent}
-              onChange={setEmailContent}
-              modules={quillModules}
-              className={styles.quillEditor}
+            <FroalaEditor
+              model={emailContent}
+              onModelChange={handleModelChange}
+              config={froalaEditorConfig}
             />
           </div>
 
@@ -431,52 +559,12 @@ const SendEmail = () => {
           />
 
           <div className={styles.spaceX4}>
-            <button
-              type="submit"
-              className={styles.button}
-              disabled={isSending || recipients.length === 0}
-              style={{
-                opacity: isSending || recipients.length === 0 ? 0.6 : 1,
-                cursor:
-                  isSending || recipients.length === 0
-                    ? "not-allowed"
-                    : "pointer",
-              }}
-            >
-              {isSending ? (
-                <>
-                  <span>Sending...</span>
-                  <svg
-                    className="animate-spin h-5 w-5 ml-2"
-                    style={{ display: "inline-block", marginLeft: "8px" }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                </>
-              ) : (
-                <>
-                  Send Email{" "}
-                  <FontAwesomeIcon
-                    icon={faPaperPlane}
-                    style={{ color: "#ffffff" }}
-                  />
-                </>
-              )}
+            <button type="submit" className={styles.button}>
+              Send Email{" "}
+              <FontAwesomeIcon
+                icon={faPaperPlane}
+                style={{ color: "#ffffff" }}
+              />
             </button>
           </div>
         </form>

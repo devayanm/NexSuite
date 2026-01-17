@@ -1,16 +1,13 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const Admin = require('../models/Admin');
-const ExpressError = require('../utils/ExpressError');
-const { 
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const Admin = require("../models/Admin");
+const ExpressError = require("../utils/ExpressError");
+const {
   getAllActiveJobsCount,
-  getEmailsByAdminIdCount 
-} = require('../services/emailService');
-const { 
-  getAllContactsCount,
-  getContactListsCount 
-} = require('../services/contactListService');
- 
+  getEmailsByAdminIdCount,
+} = require("../services/emailService");
+const Contact = require("../models/Contact");
+
 module.exports.adminLogin = async (req, res) => {
   let { email, password } = req.body;
 
@@ -35,15 +32,17 @@ module.exports.adminLogin = async (req, res) => {
     username: user.username,
   };
 
-  const token = jwt.sign(payload, process.env.ADMIN_SECRET, { expiresIn: "3h" });
+  const token = jwt.sign(payload, process.env.ADMIN_SECRET, {
+    expiresIn: "3h",
+  });
 
   res.cookie("adminjwt", token, {
     signed: true,
     httpOnly: true,
-    sameSite:  process.env.NODE_ENV === 'production' ? "none" : "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     path: "/",
     maxAge: 3 * 1000 * 60 * 60,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV === "production",
   });
 
   res.status(200).json({
@@ -61,14 +60,12 @@ module.exports.adminLogout = (req, res) => {
 module.exports.getHomePage = async (req, res) => {
   const { adminId } = req.query;
   const totalActiveScheduledMails = await getAllActiveJobsCount();
-  const totalContacts = await getAllContactsCount(adminId);
-  const totalContactList = await getContactListsCount(adminId);
+  const totalContacts = await Contact.countDocuments({ createdBy: adminId });
   const mailsSent = await getEmailsByAdminIdCount(adminId);
   const response = {
     mailsSent: mailsSent,
     totalContacts: totalContacts,
-    totalContactList: totalContactList,
     totalActiveScheduledMails: totalActiveScheduledMails,
-  }
+  };
   res.status(200).json(response);
-}
+};

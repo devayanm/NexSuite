@@ -77,7 +77,7 @@ const Table = () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL;
         const response = await fetch(
-          `${apiUrl}/contact-lists/contacts?adminId=${user}`,
+          `${apiUrl}/api/contacts/all?adminId=${user}`,
           {
             method: "GET",
             headers: {

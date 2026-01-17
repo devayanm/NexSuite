@@ -10,7 +10,6 @@
 //   width: 100%;
 // `;
 
-
 // const Layout = () => {
 //   return (
 //     <Container>
@@ -22,20 +21,17 @@
 
 // export default Layout;
 
-
-
-import { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useEffect, useState } from "react";
+import { Outlet } from "react-router-dom";
 
 // Components
 // import Navbar from '../../components/Navbar/Navbar';
 // import Footer from '../../components/Footer/Footer';
-import Loader from '../../Components/Loader/Loader'
-import Header from '../../Components/Header/Header';
-import Sidebar from '../../Components/Sidebar/Sidebar';
+import Loader from "../../Components/Loader/Loader";
+import Sidebar from "../../Components/Sidebar/SidebarEnhanced";
 
 // Style
-import style from './Layout.module.css';
+import style from "./Layout.module.css";
 
 const Layout = () => {
   const [loading, setLoading] = useState(false);
@@ -55,7 +51,7 @@ const Layout = () => {
 
   return (
     <div className={style.container}>
-      <Header />
+      
       <div className={style.main}>
         <div className={style.sidebar}>
           <Sidebar />
